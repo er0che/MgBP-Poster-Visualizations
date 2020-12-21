@@ -1,0 +1,145 @@
+```{r include=FALSE, warning=FALSE}
+source('vis_mgbp_bps.R')
+
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=TRUE,
+                      conf.interval=.95, .drop=TRUE) {
+    library(plyr)
+
+    # New version of length which can handle NA's: if na.rm==T, don't count them
+    length2 <- function (x, na.rm=FALSE) {
+        if (na.rm) sum(!is.na(x))
+        else       length(x)
+    }
+
+    # This does the summary. For each group's data frame, return a vector with
+    # N, mean, and sd
+    datac <- ddply(data, groupvars, .drop=.drop,
+      .fun = function(xx, col) {
+        c(N    = length2(xx[[col]], na.rm=na.rm),
+          mean = mean   (xx[[col]], na.rm=na.rm),
+          sd   = sd     (xx[[col]], na.rm=na.rm)
+        )
+      },
+      measurevar
+    )
+
+    # Rename the "mean" column    
+    datac <- rename(datac, c("mean" = measurevar))
+
+    datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+
+    # Confidence interval multiplier for standard error
+    # Calculate t-statistic for confidence interval: 
+    # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+    ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+    datac$ci <- datac$se * ciMult
+
+    return(datac)
+}
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+png("systolic_24hr.png",  width = 1200, height = 550) 
+
+pd <- position_dodge(0.1) # move them .05 to the left and right
+
+summ <- summarySE(avg, measurevar="bl_24_systolic", groupvars=c("Treatment"))
+summ$Timepoint <- 'Baseline'
+summ2 <- summarySE(avg, measurevar="wk6_24_systolic", groupvars=c("Treatment"))
+summ2$Timepoint <- '6 Weeks'
+summ3 <- summarySE(avg, measurevar="wk12_24_systolic", groupvars=c("Treatment"))
+summ3$Timepoint <- '12 Weeks'
+
+summ <- dplyr::rename(summ, 'systolic'='bl_24_systolic')
+summ2 <- dplyr::rename(summ2, 'systolic'='wk6_24_systolic')
+summ3 <- dplyr::rename(summ3, 'systolic'='wk12_24_systolic')
+summ <- rbind(summ, summ2, summ3)
+summ$Timepoint <- factor(summ$Timepoint, levels=c("Baseline", "6 Weeks", "12 Weeks"))
+summ$Treatment <- apply(summ[1], MARGIN=2, function(x) {ifelse(x=='A', '480 mg/d Magnesium', ifelse(x=='B', 'Placebo', x))})
+
+ggplot(summ, aes(x=Timepoint, y=systolic, colour=Treatment)) + 
+    geom_errorbar(aes(ymin=systolic-ci, ymax=systolic+ci), width=.1, size=1.5, position=pd) +
+    geom_point(position=pd, size=7) +theme_bw(base_size=22) + scale_y_continuous(limits=c(120,140), name='24hr Systolic BP (mmHg)', breaks=c(120,124,128, 132, 136, 140))
+
+dev.off() 
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+png("diastolic_24hr.png",  width = 1200, height = 550) 
+
+pd <- position_dodge(0.1) # move them .05 to the left and right
+
+summ <- summarySE(avg, measurevar="bl_24_diastolic", groupvars=c("Treatment"))
+summ$Timepoint <- 'Baseline'
+summ2 <- summarySE(avg, measurevar="wk6_24_diastolic", groupvars=c("Treatment"))
+summ2$Timepoint <- '6 Weeks'
+summ3 <- summarySE(avg, measurevar="wk12_24_diastolic", groupvars=c("Treatment"))
+summ3$Timepoint <- '12 Weeks'
+
+summ <- dplyr::rename(summ, 'diastolic'='bl_24_diastolic')
+summ2 <- dplyr::rename(summ2, 'diastolic'='wk6_24_diastolic')
+summ3 <- dplyr::rename(summ3, 'diastolic'='wk12_24_diastolic')
+summ <- rbind(summ, summ2, summ3)
+summ$Timepoint <- factor(summ$Timepoint, levels=c("Baseline", "6 Weeks", "12 Weeks"))
+summ$Treatment <- apply(summ[1], MARGIN=2, function(x) {ifelse(x=='A', '480 mg/d Magnesium', ifelse(x=='B', 'Placebo', x))})
+
+ggplot(summ, aes(x=Timepoint, y=diastolic, colour=Treatment)) + 
+    geom_errorbar(aes(ymin=diastolic-ci, ymax=diastolic+ci), width=.1, size=1.5, position=pd) +
+    geom_point(position=pd, size=7) +theme_bw(base_size=22) + scale_y_continuous(limits=c(70,90), name='24hr Diastolic BP (mmHg)', breaks=c(70,74,78,82,86,90))
+
+dev.off()
+```
+
+```{r echo=FALSE, warning=FALSE, warning=FALSE}
+png("systolic_seated.png",  width = 1200, height = 550) 
+
+pd <- position_dodge(0.1) # move them .05 to the left and right
+
+summ <- summarySE(avg, measurevar="bl_s_systolic", groupvars=c("Treatment"))
+summ$Timepoint <- 'Baseline'
+summ2 <- summarySE(avg, measurevar="wk6_s_systolic", groupvars=c("Treatment"))
+summ2$Timepoint <- '6 Weeks'
+summ3 <- summarySE(avg, measurevar="wk12_s_systolic", groupvars=c("Treatment"))
+summ3$Timepoint <- '12 Weeks'
+
+summ <- dplyr::rename(summ, 'systolic'='bl_s_systolic')
+summ2 <- dplyr::rename(summ2, 'systolic'='wk6_s_systolic')
+summ3 <- dplyr::rename(summ3, 'systolic'='wk12_s_systolic')
+summ <- rbind(summ, summ2, summ3)
+summ$Timepoint <- factor(summ$Timepoint, levels=c("Baseline", "6 Weeks", "12 Weeks"))
+summ$Treatment <- apply(summ[1], MARGIN=2, function(x) {ifelse(x=='A', '480 mg/d Magnesium', ifelse(x=='B', 'Placebo', x))})
+
+ggplot(summ, aes(x=Timepoint, y=systolic, colour=Treatment)) + 
+    geom_errorbar(aes(ymin=systolic-ci, ymax=systolic+ci), width=.1, size=1.5, position=pd) +
+    geom_point(position=pd, size=7) +theme_bw(base_size=22) + scale_y_continuous(limits=c(120,140), name='Seated Systolic BP (mmHg)', breaks=c(120,124,128, 132, 136, 140))
+
+dev.off()
+
+```
+
+```{r echo=FALSE, warning=FALSE, warning=FALSE}
+png("diastolic_seated.png",  width = 1200, height = 550) 
+
+pd <- position_dodge(0.1) # move them .05 to the left and right
+
+summ <- summarySE(avg, measurevar="bl_s_diastolic", groupvars=c("Treatment"))
+summ$Timepoint <- 'Baseline'
+summ2 <- summarySE(avg, measurevar="wk6_s_diastolic", groupvars=c("Treatment"))
+summ2$Timepoint <- '6 Weeks'
+summ3 <- summarySE(avg, measurevar="wk12_s_diastolic", groupvars=c("Treatment"))
+summ3$Timepoint <- '12 Weeks'
+
+summ <- dplyr::rename(summ, 'diastolic'='bl_s_diastolic')
+summ2 <- dplyr::rename(summ2, 'diastolic'='wk6_s_diastolic')
+summ3 <- dplyr::rename(summ3, 'diastolic'='wk12_s_diastolic')
+summ <- rbind(summ, summ2, summ3)
+summ$Timepoint <- factor(summ$Timepoint, levels=c("Baseline", "6 Weeks", "12 Weeks"))
+summ$Treatment <- apply(summ[1], MARGIN=2, function(x) {ifelse(x=='A', '480 mg/d Magnesium', ifelse(x=='B', 'Placebo', x))})
+
+ggplot(summ, aes(x=Timepoint, y=diastolic, colour=Treatment)) + 
+    geom_errorbar(aes(ymin=diastolic-ci, ymax=diastolic+ci), width=.1, size=1.5, position=pd) +
+    geom_point(position=pd, size=7) +theme_bw(base_size=22) + scale_y_continuous(limits=c(70,90), name='Seated Diastolic BP (mmHg)', breaks=c(70,74,78,82,86,90))
+
+dev.off()
+```
